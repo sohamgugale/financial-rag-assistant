@@ -7,7 +7,7 @@ class Settings:
     """Application settings and configuration"""
     
     # API Keys
-    OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
+    ANTHROPIC_API_KEY: str = os.getenv("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", "")
     
     # Application settings
     APP_NAME: str = "Financial Research Assistant"

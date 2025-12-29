@@ -1,7 +1,7 @@
 import time
 from typing import List, Dict, Tuple
 from datetime import datetime
-from langchain_openai import ChatOpenAI
+from langchain_anthropic import ChatAnthropic
 from langchain.chains import RetrievalQA
 from langchain.prompts import PromptTemplate
 from app.core.config import settings
@@ -12,12 +12,12 @@ class RAGService:
     """Retrieval Augmented Generation service for financial documents"""
     
     def __init__(self):
-        self.llm = ChatOpenAI(
-            model_name=settings.MODEL_NAME,
-            temperature=settings.TEMPERATURE,
-            max_tokens=settings.MAX_TOKENS,
-            openai_api_key=settings.OPENAI_API_KEY
-        )
+        self.llm = ChatAnthropic(
+    model="claude-3-5-sonnet-20241022",
+    temperature=settings.TEMPERATURE,
+    max_tokens=settings.MAX_TOKENS,
+    anthropic_api_key=settings.ANTHROPIC_API_KEY
+)
         
     def _create_qa_prompt(self) -> PromptTemplate:
         """Create prompt template for QA"""
