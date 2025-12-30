@@ -8,7 +8,6 @@ class Settings:
     
     # API Keys
     ANTHROPIC_API_KEY: str = os.getenv("ANTHROPIC_API_KEY", "")
-    OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
     
     # Application settings
     APP_NAME: str = "Financial Research Assistant"

@@ -4,7 +4,7 @@ from typing import List, Dict, Tuple
 from datetime import datetime
 import pypdf
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_openai import OpenAIEmbeddings
+from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
 from langchain.docstore.document import Document
 from app.core.config import settings
@@ -14,10 +14,9 @@ class DocumentProcessor:
     """Process and manage documents for RAG system"""
     
     def __init__(self):
-        # Fixed: Simplified initialization without extra parameters
-        self.embeddings = OpenAIEmbeddings(
-            model="text-embedding-ada-002",
-            openai_api_key=settings.OPENAI_API_KEY
+        # Use FREE local embeddings - no API key needed!
+        self.embeddings = HuggingFaceEmbeddings(
+            model_name="sentence-transformers/all-MiniLM-L6-v2"
         )
         self.text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=settings.CHUNK_SIZE,
