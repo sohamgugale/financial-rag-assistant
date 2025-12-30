@@ -14,7 +14,11 @@ class DocumentProcessor:
     """Process and manage documents for RAG system"""
     
     def __init__(self):
-        self.embeddings = OpenAIEmbeddings(openai_api_key=settings.OPENAI_API_KEY)
+        # Fixed: Simplified initialization without extra parameters
+        self.embeddings = OpenAIEmbeddings(
+            model="text-embedding-ada-002",
+            openai_api_key=settings.OPENAI_API_KEY
+        )
         self.text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=settings.CHUNK_SIZE,
             chunk_overlap=settings.CHUNK_OVERLAP,
@@ -32,8 +36,11 @@ class DocumentProcessor:
         
         metadata_path = os.path.join(settings.VECTOR_DB_PATH, "metadata.json")
         if os.path.exists(metadata_path):
-            with open(metadata_path, 'r') as f:
-                self.documents_metadata = json.load(f)
+            try:
+                with open(metadata_path, 'r') as f:
+                    self.documents_metadata = json.load(f)
+            except:
+                self.documents_metadata = {}
         
         index_path = os.path.join(settings.VECTOR_DB_PATH, "index.faiss")
         if os.path.exists(index_path):
@@ -77,8 +84,13 @@ class DocumentProcessor:
         
         for page_section in pages[1:]:
             page_num_end = page_section.find("]")
+            if page_num_end == -1:
+                continue
             page_num = int(page_section[:page_num_end])
             page_text = page_section[page_num_end + 1:].strip()
+            
+            if not page_text:
+                continue
             
             page_chunks = self.text_splitter.create_documents(
                 texts=[page_text],
@@ -102,6 +114,9 @@ class DocumentProcessor:
             document_id = self._generate_document_id(filename)
             text, page_count = self.extract_text_from_pdf(file_path)
             chunks = self.create_chunks_with_metadata(text, document_id, filename)
+            
+            if not chunks:
+                raise Exception("No text could be extracted from the PDF")
             
             if self.vector_store is None:
                 self.vector_store = FAISS.from_documents(chunks, self.embeddings)
