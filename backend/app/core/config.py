@@ -7,7 +7,8 @@ class Settings:
     """Application settings and configuration"""
     
     # API Keys
-    ANTHROPIC_API_KEY: str = os.getenv("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", "")
+    ANTHROPIC_API_KEY: str = os.getenv("ANTHROPIC_API_KEY", "")
+    OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
     
     # Application settings
     APP_NAME: str = "Financial Research Assistant"
@@ -23,7 +24,7 @@ class Settings:
     ]
     
     # File upload settings
-    MAX_UPLOAD_SIZE: int = 10 * 1024 * 1024  # 10MB
+    MAX_UPLOAD_SIZE: int = 10 * 1024 * 1024
     UPLOAD_DIR: str = "uploads"
     ALLOWED_EXTENSIONS: set = {".pdf"}
     
@@ -33,7 +34,7 @@ class Settings:
     CHUNK_OVERLAP: int = 200
     
     # LLM settings
-    MODEL_NAME: str = "gpt-3.5-turbo"
+    MODEL_NAME: str = "claude-3-5-sonnet-20241022"
     TEMPERATURE: float = 0.7
     MAX_TOKENS: int = 1500
     

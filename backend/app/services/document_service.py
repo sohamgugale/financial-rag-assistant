@@ -4,7 +4,7 @@ from typing import List, Dict, Tuple
 from datetime import datetime
 import pypdf
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_anthropic import AnthropicEmbeddings
+from langchain_openai import OpenAIEmbeddings
 from langchain_community.vectorstores import FAISS
 from langchain.docstore.document import Document
 from app.core.config import settings
@@ -14,7 +14,7 @@ class DocumentProcessor:
     """Process and manage documents for RAG system"""
     
     def __init__(self):
-        self.embeddings = AnthropicEmbeddings(anthropic_api_key=settings.ANTHROPIC_API_KEY)
+        self.embeddings = OpenAIEmbeddings(openai_api_key=settings.OPENAI_API_KEY)
         self.text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=settings.CHUNK_SIZE,
             chunk_overlap=settings.CHUNK_OVERLAP,
@@ -30,13 +30,11 @@ class DocumentProcessor:
         os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
         os.makedirs(settings.VECTOR_DB_PATH, exist_ok=True)
         
-        # Load metadata if exists
         metadata_path = os.path.join(settings.VECTOR_DB_PATH, "metadata.json")
         if os.path.exists(metadata_path):
             with open(metadata_path, 'r') as f:
                 self.documents_metadata = json.load(f)
         
-        # Load vector store if exists
         index_path = os.path.join(settings.VECTOR_DB_PATH, "index.faiss")
         if os.path.exists(index_path):
             try:
@@ -72,12 +70,7 @@ class DocumentProcessor:
         
         return "\n\n".join(text_content), page_count
     
-    def create_chunks_with_metadata(
-        self, 
-        text: str, 
-        document_id: str, 
-        filename: str
-    ) -> List[Document]:
+    def create_chunks_with_metadata(self, text: str, document_id: str, filename: str) -> List[Document]:
         """Create chunks with rich metadata for citations"""
         chunks = []
         pages = text.split("[Page ")
