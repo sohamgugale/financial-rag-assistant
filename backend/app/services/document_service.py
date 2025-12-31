@@ -4,8 +4,7 @@ from typing import List, Dict, Tuple
 from datetime import datetime
 import pypdf
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_community.embeddings import HuggingFaceEmbeddings
-from langchain_community.vectorstores import FAISS
+from langchain_community.retrievers import BM25Retriever
 from langchain.docstore.document import Document
 from app.core.config import settings
 import json
@@ -14,22 +13,20 @@ class DocumentProcessor:
     """Process and manage documents for RAG system"""
     
     def __init__(self):
-        # Use FREE local embeddings - no API key needed!
-        self.embeddings = HuggingFaceEmbeddings(
-            model_name="sentence-transformers/all-MiniLM-L6-v2"
-        )
+        # Use BM25 - lightweight keyword search, no embeddings needed!
         self.text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=settings.CHUNK_SIZE,
             chunk_overlap=settings.CHUNK_OVERLAP,
             separators=["\n\n", "\n", ". ", " ", ""],
             length_function=len
         )
-        self.vector_store = None
+        self.retriever = None
+        self.all_documents = []
         self.documents_metadata: Dict = {}
-        self._load_or_create_vector_store()
+        self._load_metadata()
         
-    def _load_or_create_vector_store(self):
-        """Load existing vector store or create new one"""
+    def _load_metadata(self):
+        """Load existing metadata"""
         os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
         os.makedirs(settings.VECTOR_DB_PATH, exist_ok=True)
         
@@ -40,19 +37,6 @@ class DocumentProcessor:
                     self.documents_metadata = json.load(f)
             except:
                 self.documents_metadata = {}
-        
-        index_path = os.path.join(settings.VECTOR_DB_PATH, "index.faiss")
-        if os.path.exists(index_path):
-            try:
-                self.vector_store = FAISS.load_local(
-                    settings.VECTOR_DB_PATH, 
-                    self.embeddings,
-                    allow_dangerous_deserialization=True
-                )
-                print(f"Loaded existing vector store with {len(self.documents_metadata)} documents")
-            except Exception as e:
-                print(f"Error loading vector store: {e}")
-                self.vector_store = None
     
     def _generate_document_id(self, filename: str) -> str:
         """Generate unique document ID"""
@@ -108,7 +92,7 @@ class DocumentProcessor:
         return chunks
     
     async def process_document(self, file_path: str, filename: str) -> Dict:
-        """Process uploaded document and add to vector store"""
+        """Process uploaded document and add to retriever"""
         try:
             document_id = self._generate_document_id(filename)
             text, page_count = self.extract_text_from_pdf(file_path)
@@ -117,12 +101,12 @@ class DocumentProcessor:
             if not chunks:
                 raise Exception("No text could be extracted from the PDF")
             
-            if self.vector_store is None:
-                self.vector_store = FAISS.from_documents(chunks, self.embeddings)
-            else:
-                self.vector_store.add_documents(chunks)
+            # Add to document list
+            self.all_documents.extend(chunks)
             
-            self.vector_store.save_local(settings.VECTOR_DB_PATH)
+            # Recreate BM25 retriever with all documents
+            self.retriever = BM25Retriever.from_documents(self.all_documents)
+            self.retriever.k = settings.TOP_K
             
             file_stats = os.stat(file_path)
             self.documents_metadata[document_id] = {
@@ -134,6 +118,7 @@ class DocumentProcessor:
                 "file_size": file_stats.st_size
             }
             
+            # Save metadata
             metadata_path = os.path.join(settings.VECTOR_DB_PATH, "metadata.json")
             with open(metadata_path, 'w') as f:
                 json.dump(self.documents_metadata, f, indent=2)
@@ -152,12 +137,27 @@ class DocumentProcessor:
         return self.documents_metadata.get(document_id)
     
     def delete_document(self, document_id: str) -> bool:
-        """Delete document from vector store"""
+        """Delete document"""
         if document_id in self.documents_metadata:
+            # Remove from documents list
+            self.all_documents = [
+                doc for doc in self.all_documents 
+                if doc.metadata.get("document_id") != document_id
+            ]
+            
+            # Recreate retriever
+            if self.all_documents:
+                self.retriever = BM25Retriever.from_documents(self.all_documents)
+                self.retriever.k = settings.TOP_K
+            else:
+                self.retriever = None
+            
             del self.documents_metadata[document_id]
+            
             metadata_path = os.path.join(settings.VECTOR_DB_PATH, "metadata.json")
             with open(metadata_path, 'w') as f:
                 json.dump(self.documents_metadata, f, indent=2)
+            
             return True
         return False
 

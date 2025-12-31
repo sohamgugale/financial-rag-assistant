@@ -16,7 +16,7 @@ class RAGService:
             model=settings.MODEL_NAME,
             temperature=settings.TEMPERATURE,
             max_tokens=settings.MAX_TOKENS,
-            anthropic_api_key=settings.ANTHROPIC_API_KEY
+            api_key=settings.ANTHROPIC_API_KEY
         )
         
     def _create_qa_prompt(self) -> PromptTemplate:
@@ -45,18 +45,17 @@ class RAGService:
         """Query documents and return answer with citations"""
         start_time = time.time()
         
-        if document_processor.vector_store is None:
+        if document_processor.retriever is None:
             return "No documents available. Please upload documents first.", [], 0.0, 0.0
         
         try:
-            retriever = document_processor.vector_store.as_retriever(
-                search_kwargs={"k": max_results}
-            )
+            # Update k value
+            document_processor.retriever.k = max_results
             
             qa_chain = RetrievalQA.from_chain_type(
                 llm=self.llm,
                 chain_type="stuff",
-                retriever=retriever,
+                retriever=document_processor.retriever,
                 return_source_documents=True,
                 chain_type_kwargs={"prompt": self._create_qa_prompt()}
             )
@@ -90,7 +89,7 @@ class RAGService:
     async def extract_insights(self, document_ids: List[str], insight_type: str) -> str:
         """Extract insights from specified documents"""
         
-        if document_processor.vector_store is None:
+        if document_processor.retriever is None:
             return "No documents available."
         
         doc_names = [
@@ -133,17 +132,8 @@ class RAGService:
         query = prompts.get(comparison_type, prompts["general"])
         answer, citations, _, _ = await self.query_documents(query, document_ids, max_results=15)
         
-        differences = [
-            "Document-specific metrics vary",
-            "Different reporting periods",
-            "Varied focus areas"
-        ]
-        
-        similarities = [
-            "Common industry trends",
-            "Similar reporting standards",
-            "Comparable structure"
-        ]
+        differences = ["Document-specific metrics vary", "Different reporting periods", "Varied focus areas"]
+        similarities = ["Common industry trends", "Similar reporting standards", "Comparable structure"]
         
         return answer, differences, similarities
 
