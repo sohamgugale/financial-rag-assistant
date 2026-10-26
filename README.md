@@ -78,7 +78,7 @@ An advanced **Retrieval-Augmented Generation (RAG)** system specifically designe
 
 1. **Clone the repository**
 ```bash
-git clone https://github.com/yourusername/financial-rag-assistant.git
+git clone https://github.com/sohamgugale/financial-rag-assistant.git
 cd financial-rag-assistant
 ```
 
@@ -300,7 +300,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 Your Name - [@yourhandle](https://twitter.com/yourhandle)
 
-Project Link: [https://github.com/yourusername/financial-rag-assistant](https://github.com/yourusername/financial-rag-assistant)
+Project Link: [https://github.com/sohamgugale/financial-rag-assistant](https://github.com/sohamgugale/financial-rag-assistant)
 
 ---
 
